@@ -1,0 +1,9 @@
+package constants
+
+const (
+	LAYOUT_ISO                      = "2006-01-02"
+	MONGO_TIME_FORMAT               = "2006-01-02T15:04:05.000Z"
+	MONGO_TIME_FORMAT_WITHOUT_MICRO = "2006-01-02T15:04:05Z"
+	TIME_FORMAT_WITHOUT_T           = "2006-01-02 15:04:05"
+	TIME_FORMAT_WITHOUT_Z           = "2006-01-02T15:04:05"
+)

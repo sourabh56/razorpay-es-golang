@@ -1,0 +1,50 @@
+<!-- Inside index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+</head>
+  
+<body>
+      <span> 1
+        <button id="paymentButton" >
+            Pay
+        </button> 
+    </span>
+    <hr/>
+</body>
+  
+</html>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+   var options = {
+       "key": "rzp_test", 
+       "amount": "2", 
+       "currency": "INR",
+       "description": "Pay & Checkout",
+       "order_id": "order_KGaSnjgysnmqDV",  
+       "handler": function (response){
+           console.log(response)
+           alert("This step of Payment Succeeded");
+       },
+       "prefill": {
+         "contact":"8002627381", 
+         "name": "Sourabh",  
+         "email": "connectsourabhk@gmail.com" 
+       },
+       "theme": {
+           "color": "#2300a3"
+       }
+   };
+   var razorpayObject = new Razorpay(options);
+   console.log(razorpayObject);
+   razorpayObject.on('payment.failed', function (response){
+         console.log(response);
+         alert("Payment failed.");
+   });
+     
+   document.getElementById('paymentButton').onclick = function(e){
+       razorpayObject.open();
+       e.preventDefault();
+   }
+</script>

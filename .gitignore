@@ -1,0 +1,6 @@
+.vscode
+vendor
+config/config.go
+__debug_bin
+
+gin-bin
