@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/razorpay-go/config"
+	"github.com/razorpay-go/constants"
 	esModel "github.com/razorpay-go/models/es"
 	"github.com/razorpay-go/repository/es"
 	razorpay "github.com/razorpay/razorpay-go"
@@ -20,7 +21,7 @@ var orderRepo = es.OrderRepo{}
 type RazorPayService struct{}
 
 func (RazorPayService) CreatePaymentOrder(amount float64, currency string, orderId string) (string, error) {
-	amountInBaseUnit := amount * 100
+	amountInBaseUnit := amount * constants.PAYMENT_BASE_UNIT
 	createRequest := map[string]interface{}{
 		"amount":   amountInBaseUnit,
 		"currency": currency,
@@ -45,7 +46,7 @@ func (RazorPayService) VerifyPayment(body string) (bool, error) {
 		return status, er
 	}
 	if paymentRequest.OrderId == "" || paymentRequest.MerchantPaymentId == "" || paymentRequest.MerchantSignature == "" {
-		return status, errors.New("Validation error, required keys are missing.")
+		return status, errors.New(constants.REQUIRED_KEY_VAL)
 	}
 	orderDetail, err := getOrder(paymentRequest.OrderId)
 	if err != nil {
@@ -53,17 +54,17 @@ func (RazorPayService) VerifyPayment(body string) (bool, error) {
 	}
 	orderDetail.PaymentId = paymentRequest.MerchantPaymentId
 	if generateSignature(paymentRequest.OrderId, paymentRequest.MerchantPaymentId, paymentRequest.MerchantSignature) {
-		orderDetail.Status = "COMPLETED"
+		orderDetail.Status = constants.PAYMENT_COMPLETED_STATUS
 		status = true
 	} else {
-		orderDetail.Status = "FAILED"
+		orderDetail.Status = constants.PAYMENT_FAILED_STATUS
 	}
 	_, orderUpdateErr := orderRepo.CreateOne(orderDetail)
 	if orderUpdateErr != nil {
 		return false, orderUpdateErr
 	}
-	if orderDetail.Status == "FAILED" {
-		return status, errors.New("Verification failed.")
+	if orderDetail.Status == constants.PAYMENT_FAILED_STATUS {
+		return status, errors.New(constants.VERIFICATION_FAILED)
 	}
 	return status, nil
 }
@@ -87,14 +88,14 @@ func generateSignature(orderId string, paymentId string, signature string) bool 
 func getOrder(id string) (esModel.Orders, error) {
 	o := esModel.Orders{}
 	if id == "" {
-		return o, errors.New("order id is required.")
+		return o, errors.New(constants.ORDER_ID_REQ)
 	}
 	order, err := orderRepo.FindOnePaymentOrder(id)
 	if err != nil {
 		return order, err
 	}
 	if order.Id == "" {
-		return order, errors.New("Invalid order id.")
+		return order, errors.New(constants.INVD_ORD_ID)
 	}
 	return order, nil
 }

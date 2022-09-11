@@ -45,13 +45,13 @@ func (OrdersService) PlaceOrder(body string) (esModel.Orders, error) {
 func getProductDetail(id string) (esModel.Products, error) {
 	var productDetail = esModel.Products{}
 	if id == "" {
-		return productDetail, errors.New("Product id is required.")
+		return productDetail, errors.New(constants.PRODUCT_ID_REQ)
 	}
 	productExists, err := productService.FindProduct(id)
 	if err != nil {
 		return productDetail, err
 	} else if productExists.Id == "" {
-		return productDetail, errors.New("Product not found.")
+		return productDetail, errors.New(constants.PRODUCT_404)
 	}
 	return productExists, nil
 }
@@ -65,20 +65,24 @@ func initOrderRequest(productDetail esModel.Products) (esModel.Orders, error) {
 		ProductId:       productDetail.Id,
 		SellPrice:       productDetail.SellPrice,
 		OriginalPrice:   productDetail.OriginalPrice,
-		Status:          "PENDING",
+		Status:          constants.PAYMENT_INIT_STATUS,
 		PaymentId:       "",
-		PaymentMerchant: "RAZORPAY",
+		PaymentMerchant: constants.PAYMENT_MERCHANT_RP,
 	}
+	// create record in db
 	orderInitResponse, orderError := orderRepo.CreateOne(orderRequest)
 	if orderError != nil {
 		return orderInitResponse, orderError
 	}
-	paymentOrderId, orderCreationError := paymentService.CreatePaymentOrder(orderInitResponse.SellPrice, "INR", orderInitResponse.Id)
+	// create payment record at merchant side
+	paymentOrderId, orderCreationError := paymentService.CreatePaymentOrder(orderInitResponse.SellPrice, constants.PAYMENT_CUR_RP, orderInitResponse.Id)
 	if orderCreationError != nil {
 		return orderInitResponse, orderCreationError
 	}
+	// capture merchant order id
 	orderInitResponse.PaymentMerchantOrderId = paymentOrderId
 
+	// update merchant payment order id
 	orderupdateResponse, updateOrderError := orderRepo.CreateOne(orderInitResponse)
 	if updateOrderError != nil {
 		return orderupdateResponse, updateOrderError
