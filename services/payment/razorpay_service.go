@@ -62,6 +62,9 @@ func (RazorPayService) VerifyPayment(body string) (bool, error) {
 	if orderUpdateErr != nil {
 		return false, orderUpdateErr
 	}
+	if orderDetail.Status == "FAILED" {
+		return status, errors.New("Verification failed.")
+	}
 	return status, nil
 }
 
