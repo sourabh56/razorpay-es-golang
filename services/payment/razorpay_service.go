@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/razorpay-go/config"
 	"github.com/razorpay-go/constants"
@@ -53,20 +54,24 @@ func (RazorPayService) VerifyPayment(body string) (bool, error) {
 		return status, err
 	}
 	orderDetail.PaymentId = paymentRequest.MerchantPaymentId
-	if generateSignature(paymentRequest.OrderId, paymentRequest.MerchantPaymentId, paymentRequest.MerchantSignature) {
-		orderDetail.Status = constants.PAYMENT_COMPLETED_STATUS
-		status = true
-	} else {
-		orderDetail.Status = constants.PAYMENT_FAILED_STATUS
+	if generateSignature(paymentRequest.OrderId, orderDetail.PaymentId, paymentRequest.MerchantSignature) == false {
+		return status, errors.New(constants.INVD_SIG)
 	}
+	// getting payment status at razor pay side
+	currentPaymentStatus, err := getPaymentCurrentStatus(orderDetail.PaymentId)
+	if err != nil {
+		return status, err
+	}
+	// update db status
+	orderDetail.Status = currentPaymentStatus
 	_, orderUpdateErr := orderRepo.CreateOne(orderDetail)
 	if orderUpdateErr != nil {
-		return false, orderUpdateErr
+		return status, orderUpdateErr
 	}
 	if orderDetail.Status == constants.PAYMENT_FAILED_STATUS {
 		return status, errors.New(constants.VERIFICATION_FAILED)
 	}
-	return status, nil
+	return true, nil
 }
 
 func generateSignature(orderId string, paymentId string, signature string) bool {
@@ -98,4 +103,20 @@ func getOrder(id string) (esModel.Orders, error) {
 		return order, errors.New(constants.INVD_ORD_ID)
 	}
 	return order, nil
+}
+
+func getPaymentCurrentStatus(paymentId string) (string, error) {
+	status, err := razorpayClient.Payment.Fetch(paymentId, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	currentStatus := status["status"].(string)
+	// possible CAPTURED, AUTHORIZED, FAILED
+	returnStatus := strings.ToUpper(currentStatus)
+	if returnStatus == constants.PAYMENT_CAPTURED_STATUS || returnStatus == constants.PAYMENT_AUTHORIZED_STATUS {
+		returnStatus = constants.PAYMENT_COMPLETED_STATUS
+	} else if returnStatus == constants.PAYMENT_FAILED_STATUS {
+		returnStatus = constants.PAYMENT_FAILED_STATUS
+	}
+	return returnStatus, nil
 }
