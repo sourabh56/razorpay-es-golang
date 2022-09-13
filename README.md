@@ -2,18 +2,22 @@
 
 ## About
 
-POC to setup razorpay golang gin integartion.
+POC to setup **razorpay golang gin** integartion.
 We have used elastiserarch to keep data
 products > keep product details
 orders > keep product order status
 
 ## Mapping
-mapping is available in ./mapping/es
+mapping is available in **./mapping/es**
 
 ## APIs
-GET localhost:5001/api/v1/products?query=Downshifter
-POST localhost:5001/api/v1/order
-POST localhost:5001/api/v1/payment/verify
+**GET** http://localhost:5001/api/v1/products?query=Downshifter
+
+
+**POST** http://localhost:5001/api/v1/order
+
+
+**POST**  http://localhost:5001/api/v1/payment/verify
 
 
 ## CURL
